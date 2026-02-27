@@ -18,9 +18,23 @@
       height: 100%;
       overflow: hidden;           /* lock vertical scroll */
       touch-action: none;         /* prevent default gestures */
-      background: url('images/ab093.jpg') no-repeat center center fixed;
-      background-size: cover;
       font-family: sans-serif;
+      cursor: url('images/hand.png'), auto;
+    }
+
+    /* Separate background element so hue-shift doesn't tint the icons/logo */
+    #bg {
+      position: fixed;
+      inset: 0;
+      background: url('images/ab093.jpg') no-repeat center center;
+      background-size: cover;
+      z-index: -1;
+      animation: hue-shift 14s linear infinite;
+    }
+
+    @keyframes hue-shift {
+      from { filter: hue-rotate(0deg); }
+      to   { filter: hue-rotate(360deg); }
     }
 
     /* floating logo */
@@ -29,10 +43,15 @@
       top: 10%;
       left: 50%;
       transform: translateX(-50%);
-      width: 40vw;
-      max-width: 200px;
+      width: 70vw;          /* mobile portrait default */
+      max-width: none;
       animation: float 3s ease-in-out infinite alternate;
       z-index: 2;
+    }
+
+    /* Desktop / landscape — shrink logo so it doesn't dominate */
+    @media (orientation: landscape) {
+      #logo { width: 30vw; }
     }
 
     @keyframes float {
@@ -58,17 +77,22 @@
       width: 100%;
       height: 100%;
       transform-style: preserve-3d;
-      transition: transform 0.5s ease;
       touch-action: pan-y;
+    }
+
+    @keyframes icon-breathe {
+      from { opacity: 0.5; }
+      to   { opacity: 0.9; }
     }
 
     .carousel-item {
       position: absolute;
       top: 50%;
       left: 50%;
-      transform-origin: 50% 50% -300px; /* will be overridden in JS */
-      cursor: pointer;
+      transform-origin: 50% 50% 0;
+      cursor: url('images/hand.png'), pointer;
       transition: transform 0.5s ease;
+      animation: icon-breathe 2s ease-in-out infinite alternate;
     }
 
     .carousel-item img {
@@ -88,21 +112,60 @@
       opacity: 0.8;
       z-index: 3;
       user-select: none;
-      cursor: pointer;
+      cursor: url('images/hand.png'), pointer;
       padding: 0 10px;
     }
 
     #arrow-left { left: 5px; }
     #arrow-right { right: 5px; }
 
+    /* Portal floor — fixed at screen bottom, rotated to look like a floor */
+    #portal-anchor {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      transform-origin: 50% 100%;          /* pivot from bottom centre */
+      transform: perspective(900px) rotateX(72deg);
+      z-index: 1;
+    }
+
+    #portal-spin {
+      display: flex;
+      justify-content: center;
+      animation: portal-rotate 10s linear infinite;
+      transform-origin: center center;
+    }
+
+    @keyframes portal-rotate {
+      to { transform: rotateZ(360deg); }
+    }
+
+    #portal-spin img {
+      display: block;
+      width: 100vw;
+      max-width: none;
+      height: auto;
+      pointer-events: none;
+    }
+
     @media (max-width: 600px) {
-      #logo { width: 50vw; }
       .carousel-item img { width: 18vw; }
     }
   </style>
 </head>
 <body>
-  <img id="logo" src="images/citadellion_logo.png" alt="logo" />
+  <!-- Separate background div so hue-rotate filter doesn't affect content -->
+  <div id="bg"></div>
+
+  <img id="logo" src="images/citadellion_logo2.png" alt="logo" />
+
+  <!-- Portal floor: fixed at screen bottom, fills full width, tilted in perspective -->
+  <div id="portal-anchor">
+    <div id="portal-spin">
+      <img src="images/pngtree-lightning-round-frame-blue-plasma-magical-portal-png-image_12012208.png" alt="" />
+    </div>
+  </div>
 
   <div id="carousel-wrapper">
     <div id="carousel"></div>
@@ -143,27 +206,62 @@
           img.src = src;
           div.appendChild(img);
           div.addEventListener('click', () => {
-            window.location.href = div.dataset.link;
+            window.open(div.dataset.link, '_blank');
           });
           carousel.appendChild(div);
         });
       }
 
+      // Max vertical raise (in px) applied to the item directly behind the viewer
+      const maxRaisePx = 55;
+
+      // Stored display angle for each item — used to guarantee CSS transitions
+      // always travel the short arc (<180°) instead of looping around the back.
+      const itemAngles = [];
+
       function positionItems() {
-        const items = carousel.children;
+        const items = carousel.querySelectorAll('.carousel-item');
         const w = carousel.offsetWidth;
-        // compute radius so items form a circle
+        // Radius so items form a horizontal circle
         radius = Math.round((w / 2) / Math.tan(Math.PI / itemCount));
+
+        // Push the carousel back so the front item sits at the viewport centre
+        carousel.style.transform = `translateZ(-${radius}px)`;
+
         for (let i = 0; i < items.length; i++) {
-          const angle = (360 / itemCount) * i;
-          items[i].style.transform = `rotateY(${angle}deg) translateZ(${radius}px)`;
+          // Geometric angle of this item relative to the front (active) item
+          const relIdx      = ((i - currentIndex + itemCount) % itemCount);
+          const geoAngleDeg = (360 / itemCount) * relIdx;
+          const geoAngleRad = (2 * Math.PI / itemCount) * relIdx;
+
+          // Start with the angle normalised to [-180, 180]
+          let targetAngle = geoAngleDeg > 180 ? geoAngleDeg - 360 : geoAngleDeg;
+
+          // If we have a previously stored angle, nudge the target so the
+          // difference is always within ±180°.  This forces CSS to interpolate
+          // along the SHORT arc regardless of which side of the carousel the
+          // item is on.
+          if (itemAngles[i] !== undefined) {
+            let diff = targetAngle - itemAngles[i];
+            while (diff >  180) { targetAngle -= 360; diff = targetAngle - itemAngles[i]; }
+            while (diff < -180) { targetAngle += 360; diff = targetAngle - itemAngles[i]; }
+          }
+          itemAngles[i] = targetAngle;
+
+          // Items farther from front are raised upward in world space.
+          // cos(0)=1 → front item: raise=0  |  cos(π)=−1 → back item: raise=maxRaisePx
+          const yRaise = -maxRaisePx * (1 - Math.cos(geoAngleRad)) / 2;
+
+          // translate(-50%,-50%) centres the icon element on the pivot point;
+          // it must be rightmost (applied first) so it acts in local element space.
+          items[i].style.transform =
+            `rotateY(${targetAngle}deg) translateZ(${radius}px) translateY(${yRaise}px) translate(-50%, -50%)`;
         }
       }
 
       function rotateToIndex(index) {
-        currentIndex = (index % itemCount + itemCount) % itemCount;
-        const angle = (360 / itemCount) * currentIndex * -1;
-        carousel.style.transform = `translateZ(-${radius}px) rotateY(${angle}deg)`;
+        currentIndex = ((index % itemCount) + itemCount) % itemCount;
+        positionItems(); // items are repositioned relative to new currentIndex
       }
 
       function next() { rotateToIndex(currentIndex + 1); }
@@ -171,12 +269,8 @@
 
       createItems();
       positionItems();
-      rotateToIndex(0);
 
-      window.addEventListener('resize', () => {
-        positionItems();
-        rotateToIndex(currentIndex);
-      });
+      window.addEventListener('resize', positionItems);
 
       document.getElementById('arrow-left').addEventListener('click', prev);
       document.getElementById('arrow-right').addEventListener('click', next);
