@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>le citadell</title>
+  <style>
+    /* basic reset */
+    * {
+      box-sizing: border-box;
+      padding: 0;
+      margin: 0;
+    }
+
+    html,
+    body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;           /* lock vertical scroll */
+      touch-action: none;         /* prevent default gestures */
+      background: url('images/ab093.jpg') no-repeat center center fixed;
+      background-size: cover;
+      font-family: sans-serif;
+    }
+
+    /* floating logo */
+    #logo {
+      position: absolute;
+      top: 10%;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 40vw;
+      max-width: 200px;
+      animation: float 3s ease-in-out infinite alternate;
+      z-index: 2;
+    }
+
+    @keyframes float {
+      from { transform: translateX(-50%) translateY(0); }
+      to { transform: translateX(-50%) translateY(-15px); }
+    }
+
+    /* carousel area */
+    #carousel-wrapper {
+      position: absolute;
+      bottom: 0;
+      width: 100%;
+      height: 66vh;
+      perspective: 1000px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow: visible;
+    }
+
+    #carousel {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      transform-style: preserve-3d;
+      transition: transform 0.5s ease;
+      touch-action: pan-y;
+    }
+
+    .carousel-item {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform-origin: 50% 50% -300px; /* will be overridden in JS */
+      cursor: pointer;
+      transition: transform 0.5s ease;
+    }
+
+    .carousel-item img {
+      display: block;
+      width: 12vw;
+      max-width: 80px;
+      height: auto;
+    }
+
+    /* arrows */
+    .arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      font-size: 3rem;
+      color: white;
+      opacity: 0.8;
+      z-index: 3;
+      user-select: none;
+      cursor: pointer;
+      padding: 0 10px;
+    }
+
+    #arrow-left { left: 5px; }
+    #arrow-right { right: 5px; }
+
+    @media (max-width: 600px) {
+      #logo { width: 50vw; }
+      .carousel-item img { width: 18vw; }
+    }
+  </style>
+</head>
+<body>
+  <img id="logo" src="images/citadellion_logo.png" alt="logo" />
+
+  <div id="carousel-wrapper">
+    <div id="carousel"></div>
+    <div id="arrow-left" class="arrow">&lt;</div>
+    <div id="arrow-right" class="arrow">&gt;</div>
+  </div>
+
+  <script>
+    (function() {
+      // list all svg icons relative paths
+      const icons = [
+        'icons/shopping-bag.svg',
+        'icons/music.svg',
+        'icons/game-controller.svg',
+        'icons/instagram.svg',
+        'icons/web.svg'
+      ];
+
+      const links = [
+        'https://citadell.printify.me/',
+        'https://soundcloud.com/citadell',
+        'https://citadellgames.com/',
+        'https://www.instagram.com/bleedcorp/',
+        'https://citadell.neocities.org/'
+      ];
+      const carousel = document.getElementById('carousel');
+      let currentIndex = 0;
+      const itemCount = icons.length;
+      let radius;
+
+      function createItems() {
+        icons.forEach((src, i) => {
+          const div = document.createElement('div');
+          div.className = 'carousel-item';
+          div.dataset.index = i;
+          div.dataset.link = links[i];
+          const img = document.createElement('img');
+          img.src = src;
+          div.appendChild(img);
+          div.addEventListener('click', () => {
+            window.location.href = div.dataset.link;
+          });
+          carousel.appendChild(div);
+        });
+      }
+
+      function positionItems() {
+        const items = carousel.children;
+        const w = carousel.offsetWidth;
+        // compute radius so items form a circle
+        radius = Math.round((w / 2) / Math.tan(Math.PI / itemCount));
+        for (let i = 0; i < items.length; i++) {
+          const angle = (360 / itemCount) * i;
+          items[i].style.transform = `rotateY(${angle}deg) translateZ(${radius}px)`;
+        }
+      }
+
+      function rotateToIndex(index) {
+        currentIndex = (index % itemCount + itemCount) % itemCount;
+        const angle = (360 / itemCount) * currentIndex * -1;
+        carousel.style.transform = `translateZ(-${radius}px) rotateY(${angle}deg)`;
+      }
+
+      function next() { rotateToIndex(currentIndex + 1); }
+      function prev() { rotateToIndex(currentIndex - 1); }
+
+      createItems();
+      positionItems();
+      rotateToIndex(0);
+
+      window.addEventListener('resize', () => {
+        positionItems();
+        rotateToIndex(currentIndex);
+      });
+
+      document.getElementById('arrow-left').addEventListener('click', prev);
+      document.getElementById('arrow-right').addEventListener('click', next);
+
+      // swipe handling
+      let startX = 0;
+      let deltaX = 0;
+      carousel.addEventListener('touchstart', e => {
+        startX = e.touches[0].clientX;
+      }, {passive:false});
+      carousel.addEventListener('touchmove', e => {
+        deltaX = e.touches[0].clientX - startX;
+      }, {passive:false});
+      carousel.addEventListener('touchend', e => {
+        if (deltaX > 30) prev();
+        else if (deltaX < -30) next();
+        startX = 0;
+        deltaX = 0;
+      });
+
+      // block vertical scroll
+      document.body.addEventListener('touchmove', e => e.preventDefault(), {passive:false});
+    })();
+  </script>
+</body>
+</html>
