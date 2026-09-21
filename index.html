@@ -164,6 +164,60 @@
     @media (max-width: 600px) {
       .carousel-item img { width: 18vw; }
     }
+
+    /* Scarf ad: full-width banner sitting just above the vertical midpoint.
+       The whole banner (gif + marquee) is one link to the shop. */
+    #scarf-ad {
+      position: fixed;
+      left: 0;
+      right: 0;
+      bottom: 50%;              /* bottom edge on the midpoint, banner above it */
+      display: block;
+      width: 100vw;
+      max-height: 18vh;
+      overflow: hidden;
+      z-index: 4;
+      text-decoration: none;
+      cursor: url('images/hand.png'), pointer;
+    }
+
+    #scarf-ad img {
+      display: block;
+      width: 100%;
+      height: auto;
+      max-height: 18vh;
+      object-fit: cover;
+      pointer-events: none;
+    }
+
+    /* Marquee: text scrolls right-to-left over the gif */
+    #scarf-marquee {
+      position: absolute;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      overflow: hidden;
+      white-space: nowrap;
+      pointer-events: none;
+    }
+
+    #scarf-marquee span {
+      display: inline-block;
+      padding-right: 4rem;
+      font-family: Impact, 'Arial Black', sans-serif;
+      font-size: clamp(1.1rem, 4vw, 2.4rem);
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      color: #fff;
+      text-shadow: 0 0 6px #000, 0 0 12px #000, 2px 2px 0 #000;
+      animation: marquee 12s linear infinite;
+    }
+
+    /* Two copies of the text; shifting by one copy's width loops seamlessly */
+    @keyframes marquee {
+      from { transform: translateX(0); }
+      to   { transform: translateX(-100%); }
+    }
   </style>
 </head>
 <body>
@@ -178,6 +232,15 @@
       <img src="images/pngtree-lightning-round-frame-blue-plasma-magical-portal-png-image_12012208.png" alt="" />
     </div>
   </div>
+
+  <!-- Scarf ad: gif banner + scrolling text, links to the shop -->
+  <a id="scarf-ad" href="https://swords2.bigcartel.com/" target="_blank" rel="noopener"
+     aria-label="Click here to get your Citadell scarf">
+    <img src="images/scarf-ad.gif" alt="" />
+    <div id="scarf-marquee" aria-hidden="true">
+      <span>Click here to get your Citadell scarf</span><span>Click here to get your Citadell scarf</span><span>Click here to get your Citadell scarf</span><span>Click here to get your Citadell scarf</span>
+    </div>
+  </a>
 
   <div id="carousel-wrapper">
     <div id="carousel"></div>
