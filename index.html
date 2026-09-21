@@ -28,6 +28,18 @@
       cursor: url('images/hand.png'), auto;
     }
 
+    /* Everything lives inside #site so one SVG filter (see bottom of body)
+       can pixelate and dither the whole page at once. */
+    #site {
+      position: fixed;
+      inset: 0;
+      filter: url('#lowres-3');
+    }
+
+    @media (max-width: 600px) {
+      #site { filter: url('#lowres-2'); }
+    }
+
     /* Separate background element so hue-shift doesn't tint the icons/logo */
     #bg {
       position: fixed;
@@ -221,6 +233,7 @@
   </style>
 </head>
 <body>
+<div id="site">
   <!-- Separate background div so hue-rotate filter doesn't affect content -->
   <div id="bg"></div>
 
@@ -247,6 +260,52 @@
     <div id="arrow-left" class="arrow">&lt;</div>
     <div id="arrow-right" class="arrow">&gt;</div>
   </div>
+</div><!-- /#site -->
+
+  <!-- Low-res dither filters applied to #site (see CSS).
+       Stage 1 (pixelate): keep one source pixel per block, then dilate it to
+       fill the block. Stage 2 (dither): add a tiled 4x4 Bayer threshold map
+       whose cell size matches the block, then snap each channel to 4 levels.
+       Two copies: 3px blocks for large screens, 2px for phones so the
+       marquee text stays readable. -->
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+    <filter id="lowres-3" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <!-- stage 1: pixelate, 3x3 CSS px blocks -->
+      <feFlood x="0" y="0" width="1" height="1" flood-color="#000" result="dot" />
+      <feComposite in="dot" in2="dot" operator="over" x="0" y="0" width="3" height="3" result="cell" />
+      <feTile in="cell" result="grid" />
+      <feComposite in="SourceGraphic" in2="grid" operator="in" result="sampled" />
+      <feMorphology in="sampled" operator="dilate" radius="1.5" result="pixelated" />
+      <!-- stage 2: ordered dither, 4 levels per channel -->
+      <feImage href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAAAAABzHgM7AAAAOklEQVR42mPkYGCoZ2BYyMBQz8DAxIAEUDgs+xkYGhkYICRuZYwWDAz1DAyJBExj/M7A0MjAEE/ANADZVwguKskNiQAAAABJRU5ErkJggg==" x="0" y="0" width="12" height="12" result="bayer" />
+      <feTile in="bayer" result="threshold" />
+      <feComposite in="pixelated" in2="threshold" operator="arithmetic" k1="0" k2="1" k3="0.25" k4="-0.125" result="noisy" />
+      <feComponentTransfer in="noisy">
+        <feFuncR type="discrete" tableValues="0 0.333 0.667 1" />
+        <feFuncG type="discrete" tableValues="0 0.333 0.667 1" />
+        <feFuncB type="discrete" tableValues="0 0.333 0.667 1" />
+        <feFuncA type="discrete" tableValues="1 1" />
+      </feComponentTransfer>
+    </filter>
+    <filter id="lowres-2" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
+      <!-- stage 1: pixelate, 2x2 CSS px blocks -->
+      <feFlood x="0" y="0" width="1" height="1" flood-color="#000" result="dot" />
+      <feComposite in="dot" in2="dot" operator="over" x="0" y="0" width="2" height="2" result="cell" />
+      <feTile in="cell" result="grid" />
+      <feComposite in="SourceGraphic" in2="grid" operator="in" result="sampled" />
+      <feMorphology in="sampled" operator="dilate" radius="1" result="pixelated" />
+      <!-- stage 2: ordered dither, 4 levels per channel -->
+      <feImage href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAAAAADhZOFXAAAAL0lEQVR42mPkYKhnWMhQz8DEAAUs+xkaGfYzNCJEGC0Y6hkSkdUwfmdoZIhHVgMAQ5sIJsod9ygAAAAASUVORK5CYII=" x="0" y="0" width="8" height="8" result="bayer" />
+      <feTile in="bayer" result="threshold" />
+      <feComposite in="pixelated" in2="threshold" operator="arithmetic" k1="0" k2="1" k3="0.25" k4="-0.125" result="noisy" />
+      <feComponentTransfer in="noisy">
+        <feFuncR type="discrete" tableValues="0 0.333 0.667 1" />
+        <feFuncG type="discrete" tableValues="0 0.333 0.667 1" />
+        <feFuncB type="discrete" tableValues="0 0.333 0.667 1" />
+        <feFuncA type="discrete" tableValues="1 1" />
+      </feComponentTransfer>
+    </filter>
+  </svg>
 
   <script>
     (function() {
