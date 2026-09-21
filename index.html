@@ -6,10 +6,12 @@
   <title>le citadell</title>
   <!-- Preload the background so it starts downloading before the CSS is parsed.
        The media queries mirror the #bg rules below so only one file is fetched. -->
-  <link rel="preload" as="image" href="images/bg-1440.webp"
-        media="(max-width: 1499px) and (max-resolution: 1.49dppx)" />
-  <link rel="preload" as="image" href="images/bg-2048.webp"
-        media="(min-width: 1500px), (min-resolution: 1.5dppx)" />
+  <link rel="preload" as="image" href="images/bg-px-s.png" media="(max-width: 600px)" />
+  <link rel="preload" as="image" href="images/bg-px-l.png" media="(min-width: 601px)" />
+  <!-- Pixel font for the marquee and arrows -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" />
   <style>
     /* basic reset */
     * {
@@ -28,19 +30,26 @@
       cursor: url('images/hand.png'), auto;
     }
 
+    /* Low-res look: every image is a small pre-dithered version (see the
+       *-px-s / *-px-l files) scaled up with nearest-neighbour sampling.
+       Phones (<=600px) get the "s" set, larger screens the "l" set. */
+    img, #bg {
+      image-rendering: crisp-edges;
+      image-rendering: pixelated;
+    }
+
     /* Separate background element so hue-shift doesn't tint the icons/logo */
     #bg {
       position: fixed;
       inset: 0;
-      background: url('images/bg-1440.webp') no-repeat center center;
+      background: url('images/bg-px-s.png') no-repeat center center;
       background-size: cover;
       z-index: -1;
       animation: hue-shift 14s linear infinite;
     }
 
-    /* Large or high-DPI screens get the bigger background */
-    @media (min-width: 1500px), (min-resolution: 1.5dppx) {
-      #bg { background-image: url('images/bg-2048.webp'); }
+    @media (min-width: 601px) {
+      #bg { background-image: url('images/bg-px-l.png'); }
     }
 
     @keyframes hue-shift {
@@ -119,7 +128,8 @@
       position: absolute;
       top: 50%;
       transform: translateY(-50%);
-      font-size: 3rem;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 2rem;
       color: white;
       opacity: 0.8;
       z-index: 3;
@@ -190,6 +200,11 @@
       pointer-events: none;
     }
 
+    /* Desktop: stretch the gif to fill the banner instead of cropping it */
+    @media (min-width: 601px) {
+      #scarf-ad img { object-fit: fill; }
+    }
+
     /* Marquee: text scrolls right-to-left over the gif */
     #scarf-marquee {
       position: absolute;
@@ -204,12 +219,12 @@
     #scarf-marquee span {
       display: inline-block;
       padding-right: 4rem;
-      font-family: Impact, 'Arial Black', sans-serif;
-      font-size: clamp(1.1rem, 4vw, 2.4rem);
-      letter-spacing: 0.05em;
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(0.75rem, 2.6vw, 1.5rem);
       text-transform: uppercase;
       color: #fff;
-      text-shadow: 0 0 6px #000, 0 0 12px #000, 2px 2px 0 #000;
+      /* hard-edged outline, no blur, to match the pixel look */
+      text-shadow: 2px 2px 0 #000, -2px 2px 0 #000, 2px -2px 0 #000, -2px -2px 0 #000;
       animation: marquee 12s linear infinite;
     }
 
@@ -224,19 +239,28 @@
   <!-- Separate background div so hue-rotate filter doesn't affect content -->
   <div id="bg"></div>
 
-  <img id="logo" src="images/logo-1000.webp" alt="logo" width="1000" height="817" fetchpriority="high" />
+  <picture>
+    <source media="(min-width: 601px)" srcset="images/logo-px-l.png" />
+    <img id="logo" src="images/logo-px-s.png" alt="logo" width="136" height="111" fetchpriority="high" />
+  </picture>
 
   <!-- Portal floor: fixed at screen bottom, fills full width, tilted in perspective -->
   <div id="portal-anchor">
     <div id="portal-spin">
-      <img src="images/pngtree-lightning-round-frame-blue-plasma-magical-portal-png-image_12012208.png" alt="" />
+      <picture>
+        <source media="(min-width: 601px)" srcset="images/portal-px-l.png" />
+        <img src="images/portal-px-s.png" alt="" />
+      </picture>
     </div>
   </div>
 
   <!-- Scarf ad: gif banner + scrolling text, links to the shop -->
   <a id="scarf-ad" href="https://swords2.bigcartel.com/" target="_blank" rel="noopener"
      aria-label="Click here to get your Citadell scarf">
-    <img src="images/scarf-ad.webp" alt="" />
+    <picture>
+      <source media="(min-width: 601px)" srcset="images/scarf-px-l.webp" />
+      <img src="images/scarf-px-s.webp" alt="" />
+    </picture>
     <div id="scarf-marquee" aria-hidden="true">
       <span>Click here to get your Citadell scarf</span><span>Click here to get your Citadell scarf</span><span>Click here to get your Citadell scarf</span><span>Click here to get your Citadell scarf</span>
     </div>
@@ -248,15 +272,16 @@
     <div id="arrow-right" class="arrow">&gt;</div>
   </div>
 
+
   <script>
     (function() {
       // list all svg icons relative paths
       const icons = [
-        'icons/web.svg',
-        'icons/shopping-bag.svg',
-        'icons/music.svg',
-        'icons/game-controller.svg',
-        'icons/instagram.svg'
+        'icons/web.png',
+        'icons/shopping-bag.png',
+        'icons/music.png',
+        'icons/game-controller.png',
+        'icons/instagram.png'
       ];
 
       const links = [
