@@ -6,10 +6,12 @@
   <title>le citadell</title>
   <!-- Preload the background so it starts downloading before the CSS is parsed.
        The media queries mirror the #bg rules below so only one file is fetched. -->
-  <link rel="preload" as="image" href="images/bg-1440.webp"
-        media="(max-width: 1499px) and (max-resolution: 1.49dppx)" />
-  <link rel="preload" as="image" href="images/bg-2048.webp"
-        media="(min-width: 1500px), (min-resolution: 1.5dppx)" />
+  <link rel="preload" as="image" href="images/bg-px-s.png" media="(max-width: 600px)" />
+  <link rel="preload" as="image" href="images/bg-px-l.png" media="(min-width: 601px)" />
+  <!-- Pixel font for the marquee and arrows -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" />
   <style>
     /* basic reset */
     * {
@@ -28,31 +30,26 @@
       cursor: url('images/hand.png'), auto;
     }
 
-    /* Everything lives inside #site so one SVG filter (see bottom of body)
-       can pixelate and dither the whole page at once. */
-    #site {
-      position: fixed;
-      inset: 0;
-      filter: url('#lowres-3');
-    }
-
-    @media (max-width: 600px) {
-      #site { filter: url('#lowres-2'); }
+    /* Low-res look: every image is a small pre-dithered version (see the
+       *-px-s / *-px-l files) scaled up with nearest-neighbour sampling.
+       Phones (<=600px) get the "s" set, larger screens the "l" set. */
+    img, #bg {
+      image-rendering: crisp-edges;
+      image-rendering: pixelated;
     }
 
     /* Separate background element so hue-shift doesn't tint the icons/logo */
     #bg {
       position: fixed;
       inset: 0;
-      background: url('images/bg-1440.webp') no-repeat center center;
+      background: url('images/bg-px-s.png') no-repeat center center;
       background-size: cover;
       z-index: -1;
       animation: hue-shift 14s linear infinite;
     }
 
-    /* Large or high-DPI screens get the bigger background */
-    @media (min-width: 1500px), (min-resolution: 1.5dppx) {
-      #bg { background-image: url('images/bg-2048.webp'); }
+    @media (min-width: 601px) {
+      #bg { background-image: url('images/bg-px-l.png'); }
     }
 
     @keyframes hue-shift {
@@ -131,7 +128,8 @@
       position: absolute;
       top: 50%;
       transform: translateY(-50%);
-      font-size: 3rem;
+      font-family: 'Press Start 2P', monospace;
+      font-size: 2rem;
       color: white;
       opacity: 0.8;
       z-index: 3;
@@ -221,12 +219,12 @@
     #scarf-marquee span {
       display: inline-block;
       padding-right: 4rem;
-      font-family: Impact, 'Arial Black', sans-serif;
-      font-size: clamp(1.1rem, 4vw, 2.4rem);
-      letter-spacing: 0.05em;
+      font-family: 'Press Start 2P', monospace;
+      font-size: clamp(0.75rem, 2.6vw, 1.5rem);
       text-transform: uppercase;
       color: #fff;
-      text-shadow: 0 0 6px #000, 0 0 12px #000, 2px 2px 0 #000;
+      /* hard-edged outline, no blur, to match the pixel look */
+      text-shadow: 2px 2px 0 #000, -2px 2px 0 #000, 2px -2px 0 #000, -2px -2px 0 #000;
       animation: marquee 12s linear infinite;
     }
 
@@ -238,23 +236,31 @@
   </style>
 </head>
 <body>
-<div id="site">
   <!-- Separate background div so hue-rotate filter doesn't affect content -->
   <div id="bg"></div>
 
-  <img id="logo" src="images/logo-1000.webp" alt="logo" width="1000" height="817" fetchpriority="high" />
+  <picture>
+    <source media="(min-width: 601px)" srcset="images/logo-px-l.png" />
+    <img id="logo" src="images/logo-px-s.png" alt="logo" width="136" height="111" fetchpriority="high" />
+  </picture>
 
   <!-- Portal floor: fixed at screen bottom, fills full width, tilted in perspective -->
   <div id="portal-anchor">
     <div id="portal-spin">
-      <img src="images/pngtree-lightning-round-frame-blue-plasma-magical-portal-png-image_12012208.png" alt="" />
+      <picture>
+        <source media="(min-width: 601px)" srcset="images/portal-px-l.png" />
+        <img src="images/portal-px-s.png" alt="" />
+      </picture>
     </div>
   </div>
 
   <!-- Scarf ad: gif banner + scrolling text, links to the shop -->
   <a id="scarf-ad" href="https://swords2.bigcartel.com/" target="_blank" rel="noopener"
      aria-label="Click here to get your Citadell scarf">
-    <img src="images/scarf-ad.webp" alt="" />
+    <picture>
+      <source media="(min-width: 601px)" srcset="images/scarf-px-l.webp" />
+      <img src="images/scarf-px-s.webp" alt="" />
+    </picture>
     <div id="scarf-marquee" aria-hidden="true">
       <span>Click here to get your Citadell scarf</span><span>Click here to get your Citadell scarf</span><span>Click here to get your Citadell scarf</span><span>Click here to get your Citadell scarf</span>
     </div>
@@ -265,62 +271,17 @@
     <div id="arrow-left" class="arrow">&lt;</div>
     <div id="arrow-right" class="arrow">&gt;</div>
   </div>
-</div><!-- /#site -->
 
-  <!-- Low-res dither filters applied to #site (see CSS).
-       Stage 1 (pixelate): keep one source pixel per block, then dilate it to
-       fill the block. Stage 2 (dither): add a tiled 4x4 Bayer threshold map
-       whose cell size matches the block, then snap each channel to 4 levels.
-       Two copies: 3px blocks for large screens, 2px for phones so the
-       marquee text stays readable. -->
-  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
-    <filter id="lowres-3" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
-      <!-- stage 1: pixelate, 3x3 CSS px blocks -->
-      <feFlood x="0" y="0" width="1" height="1" flood-color="#000" result="dot" />
-      <feComposite in="dot" in2="dot" operator="over" x="0" y="0" width="3" height="3" result="cell" />
-      <feTile in="cell" result="grid" />
-      <feComposite in="SourceGraphic" in2="grid" operator="in" result="sampled" />
-      <feMorphology in="sampled" operator="dilate" radius="1.5" result="pixelated" />
-      <!-- stage 2: ordered dither, 4 levels per channel -->
-      <feImage href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAwAAAAMCAAAAABzHgM7AAAAOklEQVR42mPkYGCoZ2BYyMBQz8DAxIAEUDgs+xkYGhkYICRuZYwWDAz1DAyJBExj/M7A0MjAEE/ANADZVwguKskNiQAAAABJRU5ErkJggg==" x="0" y="0" width="12" height="12" result="bayer" />
-      <feTile in="bayer" result="threshold" />
-      <feComposite in="pixelated" in2="threshold" operator="arithmetic" k1="0" k2="1" k3="0.25" k4="-0.125" result="noisy" />
-      <feComponentTransfer in="noisy">
-        <feFuncR type="discrete" tableValues="0 0.333 0.667 1" />
-        <feFuncG type="discrete" tableValues="0 0.333 0.667 1" />
-        <feFuncB type="discrete" tableValues="0 0.333 0.667 1" />
-        <feFuncA type="discrete" tableValues="1 1" />
-      </feComponentTransfer>
-    </filter>
-    <filter id="lowres-2" x="0" y="0" width="100%" height="100%" color-interpolation-filters="sRGB">
-      <!-- stage 1: pixelate, 2x2 CSS px blocks -->
-      <feFlood x="0" y="0" width="1" height="1" flood-color="#000" result="dot" />
-      <feComposite in="dot" in2="dot" operator="over" x="0" y="0" width="2" height="2" result="cell" />
-      <feTile in="cell" result="grid" />
-      <feComposite in="SourceGraphic" in2="grid" operator="in" result="sampled" />
-      <feMorphology in="sampled" operator="dilate" radius="1" result="pixelated" />
-      <!-- stage 2: ordered dither, 4 levels per channel -->
-      <feImage href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAgAAAAICAAAAADhZOFXAAAAL0lEQVR42mPkYKhnWMhQz8DEAAUs+xkaGfYzNCJEGC0Y6hkSkdUwfmdoZIhHVgMAQ5sIJsod9ygAAAAASUVORK5CYII=" x="0" y="0" width="8" height="8" result="bayer" />
-      <feTile in="bayer" result="threshold" />
-      <feComposite in="pixelated" in2="threshold" operator="arithmetic" k1="0" k2="1" k3="0.25" k4="-0.125" result="noisy" />
-      <feComponentTransfer in="noisy">
-        <feFuncR type="discrete" tableValues="0 0.333 0.667 1" />
-        <feFuncG type="discrete" tableValues="0 0.333 0.667 1" />
-        <feFuncB type="discrete" tableValues="0 0.333 0.667 1" />
-        <feFuncA type="discrete" tableValues="1 1" />
-      </feComponentTransfer>
-    </filter>
-  </svg>
 
   <script>
     (function() {
       // list all svg icons relative paths
       const icons = [
-        'icons/web.svg',
-        'icons/shopping-bag.svg',
-        'icons/music.svg',
-        'icons/game-controller.svg',
-        'icons/instagram.svg'
+        'icons/web.png',
+        'icons/shopping-bag.png',
+        'icons/music.png',
+        'icons/game-controller.png',
+        'icons/instagram.png'
       ];
 
       const links = [
