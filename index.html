@@ -202,6 +202,11 @@
       pointer-events: none;
     }
 
+    /* Desktop: stretch the gif to fill the banner instead of cropping it */
+    @media (min-width: 601px) {
+      #scarf-ad img { object-fit: fill; }
+    }
+
     /* Marquee: text scrolls right-to-left over the gif */
     #scarf-marquee {
       position: absolute;
