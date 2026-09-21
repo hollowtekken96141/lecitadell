@@ -4,6 +4,12 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
   <title>le citadell</title>
+  <!-- Preload the background so it starts downloading before the CSS is parsed.
+       The media queries mirror the #bg rules below so only one file is fetched. -->
+  <link rel="preload" as="image" href="images/bg-1440.webp"
+        media="(max-width: 1499px) and (max-resolution: 1.49dppx)" />
+  <link rel="preload" as="image" href="images/bg-2048.webp"
+        media="(min-width: 1500px), (min-resolution: 1.5dppx)" />
   <style>
     /* basic reset */
     * {
@@ -26,10 +32,15 @@
     #bg {
       position: fixed;
       inset: 0;
-      background: url('images/ab093.jpg') no-repeat center center;
+      background: url('images/bg-1440.webp') no-repeat center center;
       background-size: cover;
       z-index: -1;
       animation: hue-shift 14s linear infinite;
+    }
+
+    /* Large or high-DPI screens get the bigger background */
+    @media (min-width: 1500px), (min-resolution: 1.5dppx) {
+      #bg { background-image: url('images/bg-2048.webp'); }
     }
 
     @keyframes hue-shift {
@@ -44,6 +55,7 @@
       left: 50%;
       transform: translateX(-50%);
       width: 70vw;          /* mobile portrait default */
+      height: auto;
       max-width: none;
       animation: float 3s ease-in-out infinite alternate;
       z-index: 2;
@@ -158,7 +170,7 @@
   <!-- Separate background div so hue-rotate filter doesn't affect content -->
   <div id="bg"></div>
 
-  <img id="logo" src="images/citadellion_logo2.png" alt="logo" />
+  <img id="logo" src="images/logo-1000.webp" alt="logo" width="1000" height="817" fetchpriority="high" />
 
   <!-- Portal floor: fixed at screen bottom, fills full width, tilted in perspective -->
   <div id="portal-anchor">
