@@ -1,15 +1,17 @@
 #!/usr/bin/env python3
 """Generate the low-res dithered site images from the originals in src/.
 
-    python3 tools/pixelize.py            # default block size
-    python3 tools/pixelize.py --scale 2  # half-size blocks (twice the resolution)
+    python3 tools/pixelize.py              # default (--scale 1.5), matches the site
+    python3 tools/pixelize.py --scale 1    # bigger blocks
+    python3 tools/pixelize.py --scale 2    # smaller blocks
 
 Needs: pip install pillow numpy
 
 Every image gets two versions: *-px-s for phones (<= 600px wide) and
 *-px-l for larger screens. Widths are chosen so one image pixel is about
-2 CSS px on a 390px-wide phone and about 3 CSS px on a 1920px desktop.
---scale multiplies those widths, so --scale 2 halves the block size.
+2 CSS px on a 390px-wide phone and about 3 CSS px on a 1920px desktop
+at --scale 1. --scale multiplies those widths, so --scale 2 halves the
+block size; the site uses 1.5.
 
 Colours are snapped to LEVELS per channel with a 4x4 Bayer ordered dither,
 alpha is snapped to on/off with the same threshold map (fades become a
@@ -110,7 +112,7 @@ def make_icon(name, px):
 
 def main():
     ap = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    ap.add_argument('--scale', type=float, default=1.0, help='resolution multiplier; 2 = half-size blocks')
+    ap.add_argument('--scale', type=float, default=1.5, help='resolution multiplier; 2 = half-size blocks')
     args = ap.parse_args()
     os.chdir(ROOT)
     s = args.scale

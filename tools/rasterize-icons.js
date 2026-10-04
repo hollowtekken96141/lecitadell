@@ -1,11 +1,11 @@
 // Rasterise src/icons/*.svg to PNGs in tools/build/icons/ for tools/pixelize.py.
 //   npm i playwright   (or use an existing Chromium via PLAYWRIGHT_CHROMIUM_PATH)
-//   node tools/rasterize-icons.js [size]     default 64
+//   node tools/rasterize-icons.js [size]     default 48 (= 32 * the pixelize scale)
 const { chromium } = require('playwright');
 const fs = require('fs');
 const path = require('path');
 
-const size = parseInt(process.argv[2] || '64', 10);
+const size = parseInt(process.argv[2] || '48', 10);
 const root = path.resolve(__dirname, '..');
 const outDir = path.join(root, 'tools', 'build', 'icons');
 fs.mkdirSync(outDir, { recursive: true });
